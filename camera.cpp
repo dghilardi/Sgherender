@@ -14,60 +14,57 @@ Camera::Camera(Coord3D _cop, float _distance, float _angle) : cop(_cop), distanc
     viewPlane.bottomRight = Coord3D(1,-1,cop.getZ()+distance);
 }
 
-void Camera::getImage(cv::Mat &image, Scene &scene){
-    int width = image.cols;
-    int height = image.rows;
+void Camera::getImage(ImgPlane &imagePlane, int samples, Scene &scene, bool fast){
+    int width = imagePlane.getW();
+    int height = imagePlane.getH();
 
     float planeWidth = viewPlane.bottomRight.getX()-viewPlane.topLeft.getX();
     float planeHeight = viewPlane.topLeft.getY()-viewPlane.bottomRight.getY();
 
-    #pragma omp parallel for schedule(dynamic, 1) private(r)
+    string smpls = NumberToString<int>(samples);
+
+    #pragma omp parallel for schedule(dynamic, 1)
     for(int x=0; x<width; ++x){
-        PrintUtils::printPercentage(x,width);
+        PrintUtils::printPercentage(x,width, &smpls);
         for(int y=0; y<height; ++y){
-#ifdef FAST
-        float posX = x*planeWidth/(float)width+viewPlane.topLeft.getX();
-        double posY = y*planeHeight/(double)height+viewPlane.bottomRight.getY();
-        Line ray;
-        ray.point = Coord3D(posX,posY,viewPlane.topLeft.getZ());
-        ray.direction = (ray.point-cop).norm();
+        if(fast){
+            float posX = x*planeWidth/(float)width+viewPlane.topLeft.getX();
+            double posY = y*planeHeight/(double)height+viewPlane.bottomRight.getY();
+            Line ray;
+            ray.point = Coord3D(posX,posY,viewPlane.topLeft.getZ());
+            ray.direction = (ray.point-cop).norm();
 
-        Coord3D collisionPt;
-        SimpleObject *collide = scene.getCollidingObject(ray, collisionPt);
-        if(collide!=0){
-            Color col = collide->getColor();
-            image.at<uchar>(y,3*x+2) = 255*col.getR();
-            image.at<uchar>(y,3*x+1) = 255*col.getG();
-            image.at<uchar>(y,3*x) = 255*col.getB();
-        }
-        #else
-        Color pixelCol(0,0,0);
-        for(int sy=0; sy<2; sy++) for(int sx=0;sx<2;sx++){
-            Color pixelBuf(0,0,0);
-            const int smpl=128;
-            for(int i=0; i<smpl;++i){
-                double r1 = 2*FLOATRAND, r2=2*FLOATRAND;
-                double dx = r1<1 ? sqrt(r1)-1 : 1-sqrt(2-r1);
-                double dy = r2<1 ? sqrt(r2)-1 : 1-sqrt(2-r2);
-
-                double xf = x+(dx/2-0.5+sx), yf = y+(dy/2-0.5+sy);
-                float posX = xf*planeWidth/(float)width+viewPlane.topLeft.getX();
-                double posY = yf*planeHeight/(double)height+viewPlane.bottomRight.getY();
-
-                Line ray;
-                ray.point = Coord3D(posX,posY,viewPlane.topLeft.getZ());
-                ray.direction = (ray.point-cop).norm();
-
-                pixelCol = pixelCol+radiance(ray,0,scene)*(1./smpl);
+            Coord3D collisionPt;
+            SimpleObject *collide = scene.getCollidingObject(ray, collisionPt);
+            if(collide!=0){
+                Color col = collide->getColor();
+                imagePlane.updatePixel(x,y, col, samples);
             }
-            pixelCol = pixelCol+pixelBuf*0.25;
+        }else{
+            Color pixelCol(0,0,0);
+            for(int sy=0; sy<2; sy++) for(int sx=0;sx<2;sx++){
+                Color pixelBuf(0,0,0);
+                for(int i=0; i<samples;++i){
+                    double r1 = 2*FLOATRAND, r2=2*FLOATRAND;
+                    double dx = r1<1 ? sqrt(r1)-1 : 1-sqrt(2-r1);
+                    double dy = r2<1 ? sqrt(r2)-1 : 1-sqrt(2-r2);
 
+                    double xf = x+(dx/2-0.5+sx), yf = y+(dy/2-0.5+sy);
+                    float posX = xf*planeWidth/(float)width+viewPlane.topLeft.getX();
+                    double posY = yf*planeHeight/(double)height+viewPlane.bottomRight.getY();
+
+                    Line ray;
+                    ray.point = Coord3D(posX,posY,viewPlane.topLeft.getZ());
+                    ray.direction = (ray.point-cop).norm();
+
+                    pixelCol = pixelCol+radiance(ray,0,scene)*(1./samples);
+                }
+                pixelCol = pixelCol+pixelBuf*0.25;
+
+            }
+            pixelCol.clampVars();
+            imagePlane.updatePixel(x,y, pixelCol, samples);
         }
-        pixelCol.clampVars();
-        image.at<uchar>(y,3*x+2) = 255*pixelCol.getR();
-        image.at<uchar>(y,3*x+1) = 255*pixelCol.getG();
-        image.at<uchar>(y,3*x) = 255*pixelCol.getB();
-#endif
     }}
 
 }

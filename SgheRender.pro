@@ -25,3 +25,6 @@ HEADERS += \
     types/sphere.h \
     imgplane.h
 
+QMAKE_CXXFLAGS+= -fopenmp
+QMAKE_LFLAGS +=  -fopenmp
+

@@ -9,7 +9,7 @@ class PrintUtils
 {
 public:
     PrintUtils();
-    static void printPercentage(int status, int total);
+    static void printPercentage(int status, int total, const string *lbl=0);
 };
 
 #endif // PRINTUTILS_H

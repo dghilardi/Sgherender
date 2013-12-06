@@ -4,8 +4,8 @@ Scene::Scene()
 {
     //sceneElements.push_back(new Triangle(Coord3D(0,0,1),Coord3D(3,0,1),Coord3D(1,1,1)));
     //bottom
-    sceneElements.push_back(new Triangle(Coord3D(-1,1,0),Coord3D(1,1,0),Coord3D(-1,1,4), Color(0,0,1.0), Color(0,0,0), SimpleObject::DIFFUSE));
-    sceneElements.push_back(new Triangle(Coord3D(1,1,4),Coord3D(-1,1,4),Coord3D(1,1,0), Color(0,0,1.0), Color(0,0,0), SimpleObject::DIFFUSE));
+    sceneElements.push_back(new Triangle(Coord3D(-1,1,0),Coord3D(1,1,0),Coord3D(-1,1,4), Color(1.0,1.0,1.0), Color(0,0,0), SimpleObject::DIFFUSE));
+    sceneElements.push_back(new Triangle(Coord3D(1,1,4),Coord3D(-1,1,4),Coord3D(1,1,0), Color(1.0,1.0,1.0), Color(0,0,0), SimpleObject::DIFFUSE));
 
     //top
     sceneElements.push_back(new Triangle(Coord3D(1,-1,0),Coord3D(-1,-1,0),Coord3D(-1,-1,4), Color(1.0,1.0,1.0), Color(0,0,0), SimpleObject::DIFFUSE));
